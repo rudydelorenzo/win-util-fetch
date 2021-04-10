@@ -4,11 +4,13 @@ const util = require('util');
 const ProgressBar = require('progress');
 const fetch = require('node-fetch');
 const stream = require('stream');
+const DOMParser = require('jsdom');
 
+const sessID = "12312edfhjbasd";    // TODO: generate randomly each run
 const pipeline = util.promisify(stream.pipeline);
 
-async function download(url) {
-    let filename = path.basename(url);
+async function download(url, filename) {
+    if (!filename) filename = path.basename(url);    // handles optional filename argument
     const file = fs.createWriteStream(filename);
 
     let response, body;
@@ -55,8 +57,34 @@ async function download(url) {
     console.log("\x1b[32m%s\x1b[0m", `✔ | Downloaded ${filename}! (${totalsize})`);
 }
 
+async function getUtil(url) {
+    // find div containing links
+    // go to download page
+    // go to common download endpoint and intercept 302 location
+    let opts = {
+        headers: {
+            cookie: sessID
+        },
+        redirect: "manual"
+    };
+
+    let address, response;
+
+    try {
+        response = await fetch("https://www.guru3d.com/index.php?ct=files&action=download&", opts);
+        address = response.headers.get("location");
+        console.log(address);
+    } catch (err) {
+        console.error(err);
+        return
+    }
+
+    // download from location address
+    await download(address)
+}
+
 async function main() {
-    await download("https://download.cpuid.com/cpu-z/cpu-z_1.95-en.zip");
+    await getUtil("");
     console.log("All Done! :)");
 }
 
