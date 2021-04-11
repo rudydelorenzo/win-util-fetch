@@ -1,4 +1,17 @@
 {
   "CPU-Z": "https://www.guru3d.com/files-details/cpu-z-download.html",
-  "FurMark": "https://www.guru3d.com/files-details/furmark-1-8-2.html"
+  "FurMark": "https://www.guru3d.com/files-details/furmark-1-8-2.html",
+  "MSI Afterburner": "https://www.guru3d.com/files-details/msi-afterburner-beta-download.html",
+  "GPU-Z": "https://www.guru3d.com/files-details/gpu-z-download-techpowerup.html",
+  "CrystalDiskInfo": "https://www.guru3d.com/files-details/crystaldiskinfo-download.html",
+  "CrystalDiskMark": "https://www.guru3d.com/files-details/crystal-diskmark-download.html",
+  "Prime95": "https://www.guru3d.com/files-details/prime95-download.html",
+  "Display Driver Uninstaller": "https://www.guru3d.com/files-details/display-driver-uninstaller-download.html",
+  "AIDA64": "https://www.guru3d.com/files-details/aida64-download.html",
+  "iCUE": "https://www.guru3d.com/files-details/corsair-utility-engine-download-icue-download.html",
+  "HWiNFO": "https://www.guru3d.com/files-details/hwinfo64-download.html",
+  "HWMonitor": "https://www.guru3d.com/files-details/hwmonitor-download.html",
+  "PCMark 10": "https://www.guru3d.com/files-details/pcmark-10-download.html",
+  "Cinebench R23": "https://www.guru3d.com/files-details/download-maxon-cinebench-r23.html",
+  "NVFlash": "https://www.guru3d.com/files-details/nvflash-download-for-windows.html"
 }

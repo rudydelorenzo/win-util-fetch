@@ -113,7 +113,7 @@ async function getUtil(url, name) {
     // download from location address
     try {
         let {filename, size} = await download(address)
-        console.log("\x1b[32m%s\x1b[0m", `✔ | Downloaded ${filename}! (${size})`);
+        console.log("\x1b[32m%s\x1b[0m", `✔ | Downloaded ${filename}! (${(size/1000000).toFixed(2)} MB)`);
     } catch (err) {
         console.log("\x1b[31m%s\x1b[0m", "✗ | Download failed :(");
         console.error(err);
