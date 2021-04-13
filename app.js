@@ -33,7 +33,7 @@ if (!fs.existsSync(dirname)){
     fs.mkdirSync(dirname);
 }
 
-let g3dOpts = {
+let guru3dOpts = {
     headers: {
         Host: "www.guru3d.com",
         Accept: "*/*",
@@ -114,6 +114,8 @@ async function get(url, name) {
         address = await getGuru3DURL(url);
     } else if (host.includes("techpowerup")) {
         address = await getTechPowerUpURL(url);
+    } else if (host.includes("geeks3d")) {
+        address = await getGeeks3DURL(url);
     } else {
         address = url;
     }
@@ -131,18 +133,18 @@ async function get(url, name) {
 
 async function getGuru3DURL(url) {
     // find div containing links
-    let page = await fetch(url, g3dOpts);
-    g3dOpts.headers.Cookie = newCookie(page.headers);  // set PHPSESSID if a new one was sent
+    let page = await fetch(url, guru3dOpts);
+    guru3dOpts.headers.Cookie = newCookie(page.headers);  // set PHPSESSID if a new one was sent
     page = await page.text();
     let downloadPage = new DOMParser.JSDOM(page).window.document.body.getElementsByClassName("lower-greek")[0].children[0].href;
 
     // go to download page
-    await fetch(downloadPage, g3dOpts)
+    await fetch(downloadPage, guru3dOpts)
 
     // go to common download endpoint and intercept 302 location
     let address, response;
     try {
-        response = await fetch(`https://www.guru3d.com/index.php?ct=files&action=download&`, g3dOpts);
+        response = await fetch(`https://www.guru3d.com/index.php?ct=files&action=download&`, guru3dOpts);
         address = getLocationFromHeaders(response.headers);
     } catch (err) {
         console.error(err);
@@ -186,15 +188,38 @@ async function getTechPowerUpURL(url) {
     return address;
 }
 
+async function getGeeks3DURL(url) {
+    let geek3dOpts = {
+        method: "GET",
+        redirect: "manual"
+    }
+
+    let response, page, address;
+
+    response = await fetch(url, geek3dOpts);
+    page = await response.text();
+    let urlObj = new URL(url);
+    let dlPage = (`${urlObj.protocol.toString()}//${urlObj.hostname.toString()}${new DOMParser.JSDOM(page).window.
+        document.body.querySelector("div.block_left li a").href}`);
+    dlPage = dlPage.replace("show", "get");
+
+    response = await fetch(dlPage, geek3dOpts);
+
+    address = getLocationFromHeaders(response.headers);
+
+    return address;
+
+}
+
 function newCookie(headers) {
     let setCookie = headers.get("set-cookie");
     if (setCookie) {
         let cookieValStart = setCookie.indexOf("PHPSESSID=") + 10;
         let cookieValEnd = setCookie.indexOf(";", cookieValStart);
-        if (cookieValEnd === -1 || cookieValStart === 9) return g3dOpts.headers.Cookie;
+        if (cookieValEnd === -1 || cookieValStart === 9) return guru3dOpts.headers.Cookie;
         return `PHPSESSID=${setCookie.substring(cookieValStart, cookieValEnd)}`;
     } else {
-        return g3dOpts.headers.Cookie
+        return guru3dOpts.headers.Cookie
     }
 }
 
