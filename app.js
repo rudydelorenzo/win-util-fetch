@@ -24,10 +24,6 @@ const pipeline = util.promisify(stream.pipeline);
 let guru3dOpts = {
     headers: {
         Host: "www.guru3d.com",
-        Accept: "*/*",
-        "Accept-Encoding": "gzip, deflate, br",
-        Connection: "keep-alive",
-        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.90 Safari/537.36"
     },
     redirect: "manual"
 };
@@ -141,6 +137,15 @@ async function getGuru3DURL(url) {
     guru3dOpts.headers.Cookie = newCookie(page.headers);  // set PHPSESSID if a new one was sent
     page = await page.text();
     let downloadPage = new DOMParser.JSDOM(page).window.document.body.getElementsByClassName("lower-greek")[0].children[0].href;
+
+    // try to find 10GBit option
+    let list = new DOMParser.JSDOM(page).window.document.body.querySelectorAll(".lower-greek a");
+    for (let i = 0; i < list.length; i++) {
+        if (list[i].innerHTML?.includes("Netherlands")) {
+            downloadPage = list[i].href;
+            break;
+        }
+    }
 
     // go to download page
     await fetch(downloadPage, guru3dOpts)
