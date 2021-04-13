@@ -1,0 +1,20 @@
+{
+    "all": false,
+    "download": [
+        "CPU-Z",
+        "FurMark",
+        "GPU-Z",
+        "RealTemp",
+        "RealBench",
+        "MemTest64",
+        "CrystalDiskInfo",
+        "CrystalDiskMark",
+        "Prime95 (Latest)",
+        "Display Driver Uninstaller",
+        "HWiNFO",
+        "HWMonitor",
+        "Cinebench R15",
+        "Cinebench R23",
+        "OCCT"
+    ]
+}

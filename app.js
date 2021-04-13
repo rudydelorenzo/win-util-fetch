@@ -8,31 +8,18 @@ const fetch = require('node-fetch');
 const stream = require('stream');
 const DOMParser = require('jsdom');
 const FormData = require('form-data');
+const inquirer = require('inquirer');
 
-//TODO: Complete JSON file
 //TODO: Comment code
-//TODO: Wrap in .command and .bat file
+//TODO: Export native .exe
 //TODO: Use 10GBit servers
 //TODO: Move to TypeScript
-//TODO: Print total runtime at the end
 //TODO: Extract zip
 //TODO: WINDOWS USER AGENT
+//TODO: Add option for synchronous downloads
 
 const dirname = "TOOLS"
 const pipeline = util.promisify(stream.pipeline);
-
-let locations;
-try {
-    locations = JSON.parse(fs.readFileSync("locations.json"));
-} catch (err) {
-    console.log("\x1b[31m%s\x1b[0m", "✗ | Couldn't read locations.json, aborting...");
-    console.error(err);
-    return
-}
-
-if (!fs.existsSync(dirname)){
-    fs.mkdirSync(dirname);
-}
 
 let guru3dOpts = {
     headers: {
@@ -45,21 +32,24 @@ let guru3dOpts = {
     redirect: "manual"
 };
 
+function arraysEqual(a, b) {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    if (a.length !== b.length) return false;
+
+    for (let i = 0; i < a.length; ++i) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
 async function download(url, filename) {
     if (!filename) filename = path.basename(url);    // handles optional filename argument
 
     let file, response, body, headers, knownLength = true;
 
-    try {
-        response = await fetch(url);
-        body = response.body;
-    } catch (err) {
-        file.close();
-        fs.unlinkSync(filename); // delete file in case of failure
-        console.log("\x1b[31m%s\x1b[0m", "✗ | Download failed :(");
-        console.error(err);
-        return
-    }
+    response = await fetch(url);
+    body = response.body;
 
     headers = response.headers;
 
@@ -92,7 +82,7 @@ async function download(url, filename) {
         await pipeline(body, file);
     } catch (err) {
         file.close();
-        fs.unlinkSync(filename); // delete file in case of failure
+        fs.unlinkSync(path.join(dirname, filename)); // delete file in case of failure
         throw err;
     }
 
@@ -136,7 +126,7 @@ async function get(url, name) {
         let {filename, size} = await download(address);
         console.log("\x1b[32m%s\x1b[0m", `✔ | Downloaded ${filename}! (${(size/1000000).toFixed(2)} MB)`);
     } catch (err) {
-        console.log("\x1b[31m%s\x1b[0m", "✗ | Download failed :(");
+        console.log("\n\x1b[31m%s\x1b[0m", "✗ | Download failed :(");
         console.error(err);
     }
 }
@@ -295,11 +285,67 @@ function getLocationFromHeaders(headers) {
 }
 
 async function main() {
-    for (let key in locations) {
-        if (locations.hasOwnProperty(key)) await get(locations[key], key);
+    let locations, defaults;
+
+    try {
+        locations = JSON.parse(fs.readFileSync("locations.json"));
+    } catch (err) {
+        console.log("\x1b[31m%s\x1b[0m", "✗ | Couldn't read locations.json, aborting...");
+        console.error(err);
+        return
     }
 
-    console.log("\x1b[32m%s\x1b[0m", `\n✔ | All Done!\n✔ | You can find the downloaded files in ${path.join(__dirname, dirname)}`);
+    try {
+        defaults = JSON.parse(fs.readFileSync("defaults.json"));
+    } catch (err) {
+        defaults = {all: true, download:[]};
+    }
+
+    let choices = [];
+
+    for (let k in locations) choices.push(k);
+
+    let selection = await inquirer.prompt([{
+        type: 'checkbox',
+        name: 'download',
+        choices: choices,
+        message: 'Select tools to download:',
+        pageSize: 10,
+        loop: false,
+        highlight: true,
+        searchable: true,
+        default: (defaults.all) ? choices : defaults.download,
+    }]);
+
+    let save = false;
+    let selectedAll = arraysEqual(selection.download, choices);
+    if ((defaults.all !== selectedAll) || (selectedAll === false)) {
+        if (!arraysEqual(selection.download, defaults.download)) {
+            //there is difference, prompt for save
+            save = (await inquirer.prompt([{
+                type: "confirm", name: "save", message: "Save choices for next time?"
+            }])).save;
+        }
+    }
+
+    defaults.all = selectedAll;
+    if (!defaults.all) defaults.download = selection.download;
+
+    if (save) fs.writeFileSync("defaults.json", JSON.stringify(defaults, null,4));
+
+    if (!fs.existsSync(dirname)){
+        fs.mkdirSync(dirname);
+    }
+
+    let start = Date.now();
+
+    for (let key in locations) {
+        if (locations.hasOwnProperty(key)) if ((!defaults.all && defaults.download.includes(key)) || defaults.all) await get(locations[key], key);
+    }
+
+    let end = Date.now();
+
+    console.log("\x1b[32m%s\x1b[0m", `\n✔ | All Done! (Finished in ${((end-start)/1000).toFixed(2)}s)\n✔ | You can find the downloaded files in ${path.join(__dirname, dirname)}`);
 }
 
-main()
+main();
