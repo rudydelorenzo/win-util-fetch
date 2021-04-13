@@ -118,6 +118,8 @@ async function get(url, name) {
         address = await getROGURL(url);
     } else if (host.includes("cpuid")) {
         address = await getCpuIDURL(url);
+    } else if (host.includes("hwinfo")) {
+        address = await getHWiNFOURL(url);
     } else {
         address = url;
     }
@@ -260,6 +262,17 @@ async function getCpuIDURL(url) {
     page = await response.text();
 
     address = new DOMParser.JSDOM(page).window.document.body.querySelector("#downloading a").href
+
+    return address;
+}
+
+async function getHWiNFOURL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("div.row > div:nth-child(2) .download li:nth-child(3) a").href;
 
     return address;
 }
