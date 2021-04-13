@@ -116,6 +116,8 @@ async function get(url, name) {
         address = await getAida64URL(url);
     } else if (host.includes("rog")) {
         address = await getROGURL(url);
+    } else if (host.includes("cpuid")) {
+        address = await getCpuIDURL(url);
     } else {
         address = url;
     }
@@ -239,6 +241,25 @@ async function getROGURL(url) {
     page = await response.text();
 
     address = new DOMParser.JSDOM(page).window.document.body.querySelector("div.articles-content a").href;
+
+    return address;
+}
+
+async function getCpuIDURL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    let urlObj = new URL(url);
+
+    let dlPage = `${urlObj.protocol}//${urlObj.host}${new DOMParser.JSDOM(page).window.document.body
+        .querySelector("#download div.links a:nth-child(2)").href}`;
+
+    response = await fetch(dlPage);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("#downloading a").href
 
     return address;
 }
