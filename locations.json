@@ -13,6 +13,9 @@
   "HWMonitor": "https://www.guru3d.com/files-details/hwmonitor-download.html",
   "PCMark 10": "https://www.guru3d.com/files-details/pcmark-10-download.html",
   "Cinebench R23": "https://www.guru3d.com/files-details/download-maxon-cinebench-r23.html",
+  "Cinebench R15": "https://www.guru3d.com/files-details/cinebench-15-download.html",
   "NVFlash": "https://www.guru3d.com/files-details/nvflash-download-for-windows.html",
-  "OCCT": "https://www.ocbase.com/download/edition:Personal"
+  "OCCT": "https://www.ocbase.com/download/edition:Personal",
+  "SPECviewperf 13": "http://spec.cs.miami.edu/downloads/gpc/opc/viewperf/SPECviewperf13.zip",
+  "SPECviewperf 2020": "http://spec.cs.miami.edu/downloads/gpc/opc/viewperf/SPECviewperf2020_V1.0.zip"
 }
