@@ -7,6 +7,7 @@ const ProgressBar = require('progress');
 const fetch = require('node-fetch');
 const stream = require('stream');
 const DOMParser = require('jsdom');
+const FormData = require('form-data');
 
 //TODO: Complete JSON file
 //TODO: Comment code
@@ -32,7 +33,7 @@ if (!fs.existsSync(dirname)){
     fs.mkdirSync(dirname);
 }
 
-let opts = {
+let g3dOpts = {
     headers: {
         Host: "www.guru3d.com",
         Accept: "*/*",
@@ -67,7 +68,7 @@ async function download(url, filename) {
 
     let contentLength = headers.get('content-length');
     knownLength = !!contentLength;
-    console.log("\x1b[33m%s\x1b[0m", "⚠ | Will download without progress bar. Tell the server owner to include a content-length header!");
+    if (!knownLength) console.log("\x1b[33m%s\x1b[0m", "⚠ | Will download without progress bar. Tell the server owner to include a content-length header!");
     let totalSize = (knownLength) ? parseInt(headers.get('content-length'), 10) : 1;
     let downloaded = 0;
 
@@ -107,17 +108,20 @@ async function get(url, name) {
     console.log(`* | Now downloading ${name}...`);
 
     let address;
-
+    let host = (new URL(url)).hostname.toString();
     // choose url extraction algorithm  or default to simple download
-    if (url.includes("guru3d")) {
-        address = await getGuru3D(url, name);
+    if (host.includes("guru3d")) {
+        address = await getGuru3DURL(url);
+    } else if (host.includes("techpowerup")) {
+        address = await getTechPowerUpURL(url);
     } else {
         address = url;
     }
 
     // download and print console sugar
     try {
-        let {filename, size} = await download(address)
+        if (!address) throw new Error("Download function was going to receive bad input.");
+        let {filename, size} = await download(address);
         console.log("\x1b[32m%s\x1b[0m", `✔ | Downloaded ${filename}! (${(size/1000000).toFixed(2)} MB)`);
     } catch (err) {
         console.log("\x1b[31m%s\x1b[0m", "✗ | Download failed :(");
@@ -125,22 +129,21 @@ async function get(url, name) {
     }
 }
 
-async function getGuru3D(url, name) {
+async function getGuru3DURL(url) {
     // find div containing links
-    let page = await fetch(url, opts);
-    opts.headers.Cookie = newCookie(page.headers);  // set PHPSESSID if a new one was sent
+    let page = await fetch(url, g3dOpts);
+    g3dOpts.headers.Cookie = newCookie(page.headers);  // set PHPSESSID if a new one was sent
     page = await page.text();
     let downloadPage = new DOMParser.JSDOM(page).window.document.body.getElementsByClassName("lower-greek")[0].children[0].href;
 
     // go to download page
-    await fetch(downloadPage, opts)
+    await fetch(downloadPage, g3dOpts)
 
     // go to common download endpoint and intercept 302 location
     let address, response;
     try {
-        response = await fetch(`https://www.guru3d.com/index.php?ct=files&action=download&`, opts);
-        address = response.headers.get("location");
-        if (!address) throw new Error("3D guru location header was empty, returning undefined...");
+        response = await fetch(`https://www.guru3d.com/index.php?ct=files&action=download&`, g3dOpts);
+        address = getLocationFromHeaders(response.headers);
     } catch (err) {
         console.error(err);
         return address;
@@ -150,15 +153,48 @@ async function getGuru3D(url, name) {
 
 }
 
+async function getTechPowerUpURL(url) {
+    let formData = new FormData();
+    let tpuOpts = {
+        method: "GET",
+        redirect: "manual"
+    }
+
+    let response, page, address;
+    // get download page
+    response = await fetch(url, tpuOpts);
+    page = await response.text();
+    // get id
+    let id = new DOMParser.JSDOM(page).window.document.body.querySelector("div.versions form input").value;
+    // get first server id
+    tpuOpts.method = "POST";
+    tpuOpts.body = formData;
+    formData.append("id", id);
+
+    response = await fetch(url, tpuOpts);
+    page = await response.text();
+    let serverId = new DOMParser.JSDOM(page).window.document.body.querySelector("div.mirrorlist > button").value;
+    // send post req, intercept location header
+    formData = new FormData();  // FormData object freezes requests when sent twice, so we re-generate it
+    tpuOpts.body = formData;
+    formData.append("id", id);
+    formData.append("server_id", serverId);
+
+    response = await fetch(url, tpuOpts);
+    address = getLocationFromHeaders(response.headers);
+
+    return address;
+}
+
 function newCookie(headers) {
     let setCookie = headers.get("set-cookie");
     if (setCookie) {
         let cookieValStart = setCookie.indexOf("PHPSESSID=") + 10;
         let cookieValEnd = setCookie.indexOf(";", cookieValStart);
-        if (cookieValEnd === -1 || cookieValStart === 9) return opts.headers.Cookie;
+        if (cookieValEnd === -1 || cookieValStart === 9) return g3dOpts.headers.Cookie;
         return `PHPSESSID=${setCookie.substring(cookieValStart, cookieValEnd)}`;
     } else {
-        return opts.headers.Cookie
+        return g3dOpts.headers.Cookie
     }
 }
 
@@ -173,6 +209,22 @@ function getFilenameFromHeaders(headers) {
     } catch (err) {
         return filename;
     }
+}
+
+function getLocationFromHeaders(headers) {
+    let loc;
+
+    try {
+        loc = headers.get("location");
+    } catch (err) {
+        throw new Error("Location header not found, returning undefined");
+    }
+
+    if (!loc) {
+        throw new Error("Location header not found, returning undefined");
+    }
+
+    return loc;
 }
 
 async function main() {
