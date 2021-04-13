@@ -16,6 +16,7 @@ const FormData = require('form-data');
 //TODO: Move to TypeScript
 //TODO: Print total runtime at the end
 //TODO: Extract zip
+//TODO: WINDOWS USER AGENT
 
 const dirname = "TOOLS"
 const pipeline = util.promisify(stream.pipeline);
@@ -109,13 +110,22 @@ async function get(url, name) {
 
     let address;
     let host = (new URL(url)).hostname.toString();
+
     // choose url extraction algorithm  or default to simple download
     if (host.includes("guru3d")) {
         address = await getGuru3DURL(url);
     } else if (host.includes("techpowerup")) {
         address = await getTechPowerUpURL(url);
-    } else if (host.includes("geeks3d")) {
-        address = await getGeeks3DURL(url);
+    } else if (host.includes("basemark")) {
+        address = await getBasemarkURL(url);
+    } else if (host.includes("unigine")) {
+        address = await getUnigineURL(url);
+    } else if (host.includes("mersenne")) {
+        address = await getP95URL(url);
+    } else if (host.includes("aida64")) {
+        address = await getAida64URL(url);
+    } else if (host.includes("rog")) {
+        address = await getROGURL(url);
     } else {
         address = url;
     }
@@ -188,27 +198,59 @@ async function getTechPowerUpURL(url) {
     return address;
 }
 
-async function getGeeks3DURL(url) {
-    let geek3dOpts = {
-        method: "GET",
-        redirect: "manual"
-    }
-
+async function getUnigineURL(url) {
     let response, page, address;
 
-    response = await fetch(url, geek3dOpts);
+    response = await fetch(url);
     page = await response.text();
-    let urlObj = new URL(url);
-    let dlPage = (`${urlObj.protocol.toString()}//${urlObj.hostname.toString()}${new DOMParser.JSDOM(page).window.
-        document.body.querySelector("div.block_left li a").href}`);
-    dlPage = dlPage.replace("show", "get");
 
-    response = await fetch(dlPage, geek3dOpts);
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("a.drop-menu-direct-download").href;
 
-    address = getLocationFromHeaders(response.headers);
+    return address
+}
+
+async function getBasemarkURL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("a.nectar-button").href;
 
     return address;
+}
 
+async function getP95URL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("#download a").href;
+
+    return address;
+}
+
+async function getAida64URL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("ul.mirrors a").href;
+
+    return address;
+}
+
+async function getROGURL(url) {
+    let response, page, address;
+
+    response = await fetch(url);
+    page = await response.text();
+
+    address = new DOMParser.JSDOM(page).window.document.body.querySelector("div.articles-content a").href;
+
+    return address;
 }
 
 function newCookie(headers) {
